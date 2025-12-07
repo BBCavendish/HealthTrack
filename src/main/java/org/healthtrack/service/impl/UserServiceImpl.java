@@ -1,14 +1,19 @@
 package org.healthtrack.service.impl;
 
+import org.healthtrack.dto.ActiveUserStats;
 import org.healthtrack.entity.User;
 import org.healthtrack.entity.UserEmail;
 import org.healthtrack.mapper.UserMapper;
 import org.healthtrack.mapper.UserEmailMapper;
+import org.healthtrack.service.HealthReportService;
+import org.healthtrack.service.ParticipationService;
 import org.healthtrack.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -19,6 +24,12 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserEmailMapper userEmailMapper;
+    
+    @Autowired(required = false)
+    private HealthReportService healthReportService;
+    
+    @Autowired(required = false)
+    private ParticipationService participationService;
 
     // ==================== 用户管理方法 ====================
 
@@ -278,6 +289,55 @@ public class UserServiceImpl implements UserService {
             return userMapper.findByFamilyId(familyId);
         } catch (Exception e) {
             System.err.println("根据家庭ID获取用户失败: " + e.getMessage());
+            return List.of();
+        }
+    }
+    
+    @Override
+    public List<ActiveUserStats> getMostActiveUsers(int limit, String sortBy) {
+        try {
+            List<User> allUsers = userMapper.findAll();
+            
+            List<ActiveUserStats> statsList = allUsers.stream()
+                .map(user -> {
+                    int healthRecordCount = healthReportService != null ? 
+                        healthReportService.countReportsByUser(user.getHealthId()) : 0;
+                    
+                    // 统计完成的挑战数（进度>=100）
+                    int completedChallengeCount = 0;
+                    if (participationService != null) {
+                        var participations = participationService.getParticipationsByUser(user.getHealthId());
+                        completedChallengeCount = (int) participations.stream()
+                            .filter(p -> p.getProgress() != null && p.getProgress() >= 100)
+                            .count();
+                    }
+                    
+                    return new ActiveUserStats(user, healthRecordCount, completedChallengeCount);
+                })
+                .collect(Collectors.toList());
+            
+            // 根据排序方式排序
+            Comparator<ActiveUserStats> comparator;
+            switch (sortBy != null ? sortBy.toLowerCase() : "total") {
+                case "health_records":
+                    comparator = Comparator.comparingInt(ActiveUserStats::getHealthRecordCount).reversed();
+                    break;
+                case "challenges":
+                    comparator = Comparator.comparingInt(ActiveUserStats::getCompletedChallengeCount).reversed();
+                    break;
+                case "total":
+                default:
+                    comparator = Comparator.comparingInt(ActiveUserStats::getTotalActivityScore).reversed();
+                    break;
+            }
+            
+            return statsList.stream()
+                .sorted(comparator)
+                .limit(limit > 0 ? limit : Integer.MAX_VALUE)
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("获取最活跃用户失败: " + e.getMessage());
+            e.printStackTrace();
             return List.of();
         }
     }

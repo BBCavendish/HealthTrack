@@ -36,4 +36,7 @@ public interface InvitationMapper {
 
     @Select("SELECT * FROM invitation WHERE expired_time < NOW() AND status = 'Pending'")
     List<Invitation> findExpiredInvitations();
+
+    @Select("SELECT * FROM invitation WHERE invitee_contact = #{inviteeContact}")
+    List<Invitation> findByInviteeContact(String inviteeContact);
 }

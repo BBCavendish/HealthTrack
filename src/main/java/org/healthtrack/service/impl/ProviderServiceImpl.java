@@ -179,6 +179,33 @@ public class ProviderServiceImpl implements ProviderService {
         }
     }
 
+    @Override
+    public Provider getProviderByEmail(String email) {
+        try {
+            if (email == null || email.trim().isEmpty()) {
+                return null;
+            }
+
+            // 首先在provider_email表中查找匹配的邮箱
+            List<ProviderEmail> providerEmails = providerEmailMapper.findByEmailAddress(email);
+            if (providerEmails.isEmpty()) {
+                return null;
+            }
+
+            // 获取第一个匹配的提供者执照号
+            String licenseNumber = providerEmails.get(0).getLicenseNumber();
+            if (licenseNumber == null) {
+                return null;
+            }
+
+            // 根据执照号获取完整的提供者信息
+            return providerMapper.findById(licenseNumber);
+        } catch (Exception e) {
+            System.err.println("根据邮箱查找提供者失败: " + e.getMessage());
+            return null;
+        }
+    }
+
     // 私有辅助方法
     private void clearProviderPrimaryFlags(String licenseNumber) {
         try {

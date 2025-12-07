@@ -1,12 +1,15 @@
 package org.healthtrack.service.impl;
 
+import org.healthtrack.dto.ChallengeWithParticipants;
 import org.healthtrack.entity.WellnessChallenge;
 import org.healthtrack.mapper.WellnessChallengeMapper;
+import org.healthtrack.service.ParticipationService;
 import org.healthtrack.service.WellnessChallengeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,6 +19,9 @@ public class WellnessChallengeServiceImpl implements WellnessChallengeService {
 
     @Autowired
     private WellnessChallengeMapper challengeMapper;
+    
+    @Autowired
+    private ParticipationService participationService;
 
     @Override
     public List<WellnessChallenge> getAllChallenges() {
@@ -117,6 +123,27 @@ public class WellnessChallengeServiceImpl implements WellnessChallengeService {
         } catch (Exception e) {
             System.err.println("统计用户挑战数量失败: " + e.getMessage());
             return 0;
+        }
+    }
+    
+    @Override
+    public List<ChallengeWithParticipants> getMostPopularChallenges(int limit) {
+        try {
+            List<WellnessChallenge> allChallenges = challengeMapper.findAll();
+            
+            return allChallenges.stream()
+                .map(challenge -> {
+                    int participantCount = participationService != null ? 
+                        participationService.getChallengeParticipantsCount(challenge.getChallengeId()) : 0;
+                    return new ChallengeWithParticipants(challenge, participantCount);
+                })
+                .sorted(Comparator.comparingInt(ChallengeWithParticipants::getParticipantCount).reversed())
+                .limit(limit > 0 ? limit : Integer.MAX_VALUE)
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("获取最受欢迎挑战失败: " + e.getMessage());
+            e.printStackTrace();
+            return List.of();
         }
     }
 }

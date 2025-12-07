@@ -10,5 +10,7 @@ public interface InvitationService {
     boolean deleteInvitation(String invitationId);
     List<Invitation> getInvitationsByInviter(String inviterId);
     List<Invitation> getInvitationsByStatus(String status);
+    List<Invitation> getInvitationsByInvitee(String inviteeContact);
     boolean expireOldInvitations();
+    boolean acceptInvitation(String invitationId);
 }

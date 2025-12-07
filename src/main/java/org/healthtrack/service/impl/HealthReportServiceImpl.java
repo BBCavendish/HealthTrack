@@ -1,13 +1,16 @@
 package org.healthtrack.service.impl;
 
+import org.healthtrack.dto.HealthIndicatorStats;
 import org.healthtrack.entity.HealthReport;
 import org.healthtrack.mapper.HealthReportMapper;
 import org.healthtrack.service.HealthReportService;
+import org.healthtrack.util.HealthIndicatorExtractor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 健康报告服务实现类
@@ -141,6 +144,76 @@ public class HealthReportServiceImpl implements HealthReportService {
             return healthReportMapper.update(report) > 0;
         } catch (Exception e) {
             return false;
+        }
+    }
+    
+    @Override
+    public HealthIndicatorStats getMonthlyIndicatorStats(String userId, String month, String indicatorType) {
+        try {
+            // 解析月份
+            LocalDate monthDate = LocalDate.parse(month + "-01");
+            LocalDate startDate = monthDate.withDayOfMonth(1);
+            LocalDate endDate = monthDate.withDayOfMonth(monthDate.lengthOfMonth());
+            
+            // 获取该月的所有报告
+            List<HealthReport> reports = healthReportMapper.findByUserId(userId).stream()
+                .filter(r -> r.getReportMonth() != null && 
+                    !r.getReportMonth().isBefore(startDate) && 
+                    !r.getReportMonth().isAfter(endDate))
+                .collect(Collectors.toList());
+            
+            HealthIndicatorStats stats = new HealthIndicatorStats(indicatorType);
+            
+            if (reports.isEmpty()) {
+                return stats;
+            }
+            
+            // 根据指标类型提取数据
+            List<Double> values = new java.util.ArrayList<>();
+            
+            for (HealthReport report : reports) {
+                String summary = report.getSummary();
+                if (summary == null || summary.trim().isEmpty()) {
+                    continue;
+                }
+                
+                switch (indicatorType) {
+                    case "weight":
+                        Double weight = HealthIndicatorExtractor.extractWeight(summary);
+                        if (weight != null) {
+                            values.add(weight);
+                        }
+                        break;
+                    case "blood_pressure_systolic":
+                        HealthIndicatorExtractor.BloodPressure bp = HealthIndicatorExtractor.extractBloodPressure(summary);
+                        if (bp != null) {
+                            values.add((double) bp.getSystolic());
+                        }
+                        break;
+                    case "blood_pressure_diastolic":
+                        HealthIndicatorExtractor.BloodPressure bp2 = HealthIndicatorExtractor.extractBloodPressure(summary);
+                        if (bp2 != null) {
+                            values.add((double) bp2.getDiastolic());
+                        }
+                        break;
+                }
+            }
+            
+            if (values.isEmpty()) {
+                return stats;
+            }
+            
+            // 计算统计值
+            stats.setCount(values.size());
+            stats.setMin(values.stream().mapToDouble(Double::doubleValue).min().orElse(0));
+            stats.setMax(values.stream().mapToDouble(Double::doubleValue).max().orElse(0));
+            stats.setAverage(values.stream().mapToDouble(Double::doubleValue).average().orElse(0));
+            
+            return stats;
+        } catch (Exception e) {
+            System.err.println("获取健康指标统计失败: " + e.getMessage());
+            e.printStackTrace();
+            return new HealthIndicatorStats(indicatorType);
         }
     }
 }

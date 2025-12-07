@@ -28,4 +28,8 @@ public interface ProviderEmailMapper {
     // 新增：清除所有primary标记的方法
     @Update("UPDATE provider_email SET is_primary = FALSE WHERE license_number = #{licenseNumber}")
     int clearPrimaryFlags(String licenseNumber);
+
+    // 新增：通过邮箱地址查找ProviderEmail
+    @Select("SELECT * FROM provider_email WHERE email_address = #{emailAddress}")
+    List<ProviderEmail> findByEmailAddress(String emailAddress);
 }

@@ -21,4 +21,7 @@ public interface ProviderService {
     boolean removeProviderEmail(String licenseNumber, String emailAddress);
     boolean setPrimaryProviderEmail(String licenseNumber, String emailAddress);
     ProviderEmail getPrimaryProviderEmail(String licenseNumber);
+    
+    // 新增：通过邮箱查找Provider
+    Provider getProviderByEmail(String email);
 }

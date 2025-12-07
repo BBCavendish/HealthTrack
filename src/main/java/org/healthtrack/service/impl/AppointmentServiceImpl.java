@@ -121,4 +121,17 @@ public class AppointmentServiceImpl implements AppointmentService {
             return List.of();
         }
     }
+
+    @Override
+    public List<Appointment> searchAppointments(String userId, String status, String type, 
+                                                java.time.LocalDateTime startDate, 
+                                                java.time.LocalDateTime endDate, 
+                                                String providerLicense) {
+        try {
+            return appointmentMapper.searchAppointments(userId, status, type, startDate, endDate, providerLicense);
+        } catch (Exception e) {
+            System.err.println("搜索预约失败: " + e.getMessage());
+            return List.of();
+        }
+    }
 }

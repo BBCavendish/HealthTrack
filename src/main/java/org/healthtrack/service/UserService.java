@@ -49,4 +49,13 @@ public interface UserService {
     boolean setPrimaryEmail(String healthId, String emailAddress);
     UserEmail getPrimaryEmail(String healthId);
     int getUserEmailCount(String healthId);
+    
+    // ==================== 活跃用户统计方法 ====================
+    /**
+     * 获取最活跃的用户（按健康数据记录数或完成挑战数）
+     * @param limit 返回数量限制
+     * @param sortBy 排序方式：health_records（健康记录数）、challenges（完成挑战数）、total（综合）
+     * @return 活跃用户统计列表
+     */
+    List<org.healthtrack.dto.ActiveUserStats> getMostActiveUsers(int limit, String sortBy);
 }

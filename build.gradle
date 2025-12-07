@@ -57,3 +57,9 @@ jar {
 		attributes 'Main-Class': 'org.healthtrack.HealthTrackApplication'
 	}
 }
+
+bootRun {
+    jvmArgs = ["-Dfile.encoding=UTF-8"]
+    // Let the Spring Boot CLI application read from the console when run via Gradle
+    standardInput = System.in
+}

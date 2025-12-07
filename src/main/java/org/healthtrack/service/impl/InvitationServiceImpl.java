@@ -157,11 +157,22 @@ public class InvitationServiceImpl implements InvitationService {
         }
     }
 
+    @Override
+    public List<Invitation> getInvitationsByInvitee(String inviteeContact) {
+        try {
+            return invitationMapper.findByInviteeContact(inviteeContact);
+        } catch (Exception e) {
+            System.err.println("获取被邀请人邀请列表失败: " + e.getMessage());
+            return List.of();
+        }
+    }
+
     /**
      * 接受邀请
      * @param invitationId 邀请ID
      * @return 接受成功返回true，失败返回false
      */
+    @Override
     public boolean acceptInvitation(String invitationId) {
         try {
             Invitation invitation = invitationMapper.findById(invitationId);

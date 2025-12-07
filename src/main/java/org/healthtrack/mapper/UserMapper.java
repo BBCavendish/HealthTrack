@@ -13,11 +13,11 @@ public interface UserMapper {
     @Select("SELECT * FROM app_user WHERE health_id = #{healthId}")
     User findById(String healthId);
 
-    @Insert("INSERT INTO app_user (health_id, name, phone, email, verification_status, role, family_id) " +
-            "VALUES (#{healthId}, #{name}, #{phone}, #{email}, #{verificationStatus}, #{role}, #{familyId})")
+    @Insert("INSERT INTO app_user (health_id, name, phone, verification_status, role, family_id) " +
+            "VALUES (#{healthId}, #{name}, #{phone}, #{verificationStatus}, #{role}, #{familyId})")
     int insert(User user);
 
-    @Update("UPDATE app_user SET name = #{name}, phone = #{phone}, email = #{email}, " +
+    @Update("UPDATE app_user SET name = #{name}, phone = #{phone}, " +
             "verification_status = #{verificationStatus}, role = #{role}, family_id = #{familyId} " +
             "WHERE health_id = #{healthId}")
     int update(User user);
@@ -28,7 +28,10 @@ public interface UserMapper {
     @Select("SELECT * FROM app_user WHERE name LIKE CONCAT('%', #{name}, '%')")
     List<User> findByNameContaining(String name);
 
-    @Select("SELECT * FROM app_user WHERE email = #{email}")
+    // Note: findByEmail should query through user_email table, not app_user
+    // This method is kept for compatibility but should not be used directly
+    // Use UserEmailMapper.findByEmailAddress() instead
+    @Select("SELECT u.* FROM app_user u INNER JOIN user_email e ON u.health_id = e.health_id WHERE e.email_address = #{email}")
     User findByEmail(String email);
 
     @Select("SELECT * FROM app_user WHERE verification_status = #{verificationStatus}")
